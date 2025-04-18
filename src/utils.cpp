@@ -1,9 +1,11 @@
 #include <Arduino.h>
+#include <LittleFS.h>
 #include "utils.hpp"
 
 void esp_exit(const char* message) {
     Serial.println(message);
     Serial.flush();
+    LittleFS.end();
     ESP.deepSleep(0);
     Serial.println("Something went really wrong");
 }
@@ -11,6 +13,7 @@ void esp_exit(const char* message) {
 void esp_exit(const String& message) {
     Serial.println(message);
     Serial.flush();
+    LittleFS.end();
     ESP.deepSleep(0);
     Serial.println("Something went really wrong");
 }

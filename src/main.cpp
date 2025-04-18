@@ -36,6 +36,18 @@ void print_debug(void) {
     logger.log(LL_DEBUG, "  Flash chip speed: " + String(ESP.getFlashChipSpeed()));
     logger.log(LL_DEBUG, "  Sketch size: " + String(ESP.getSketchSize()) + " (" + String(ESP.getFreeSketchSpace()) + " free)");
     logger.log(LL_DEBUG, "  Sketch MD5: " + ESP.getSketchMD5());
+
+    FSInfo fsinfo;
+    if (!LittleFS.info(fsinfo)) {
+        logger.log(LL_WARNING, "Failed to get filesystem stats");
+        return;
+    }
+    logger.log(LL_DEBUG, "  FS total bytes: " + String(fsinfo.totalBytes));
+    logger.log(LL_DEBUG, "  FS used bytes: " + String(fsinfo.usedBytes));
+    logger.log(LL_DEBUG, "  FS block size: " + String(fsinfo.blockSize));
+    logger.log(LL_DEBUG, "  FS page size: " + String(fsinfo.pageSize));
+    logger.log(LL_DEBUG, "  FS max open files: " + String(fsinfo.maxOpenFiles));
+    logger.log(LL_DEBUG, "  FS max path length: " + String(fsinfo.maxPathLength));
 }
 
 void setup() {
