@@ -1,9 +1,13 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <LittleFS.h>
+#include <Ticker.h>
 #include "logger.hpp"
 #include "settings.hpp"
 #include "utils.hpp"
+
+Ticker ticker_flush;
+Ticker ticker_debug;
 
 WiFiEventHandler stationConnectedHandler;
 WiFiEventHandler stationDisconnectedHandler;
@@ -17,7 +21,22 @@ void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
     logger.log(LL_INFO, "Station disconnected: " + macToString(evt.mac));
 }
 
-IPAddress ap_ip(192, 168, 0, 1);
+void print_debug(void) {
+    logger.log(LL_DEBUG, "DEBUG:");
+    logger.log(LL_DEBUG, "  VCC: " + String(ESP.getVcc()));
+    logger.log(LL_DEBUG, "  Chip ID: " + String(ESP.getChipId()));
+    logger.log(LL_DEBUG, "  Full version: " + ESP.getFullVersion());
+    logger.log(LL_DEBUG, "  Boot version: " + String(ESP.getBootVersion()));
+    logger.log(LL_DEBUG, "  Boot mode: " + String(ESP.getBootMode()));
+    logger.log(LL_DEBUG, "  CPU freq: " + String(ESP.getCpuFreqMHz()));
+    logger.log(LL_DEBUG, "  Flash chip ID: " + String(ESP.getFlashChipId()));
+    logger.log(LL_DEBUG, "  Flash chip vendor ID: " + String(ESP.getFlashChipVendorId()));
+    logger.log(LL_DEBUG, "  Flash chip size: " + String(ESP.getFlashChipSize()));
+    logger.log(LL_DEBUG, "  Flash chip real size: " + String(ESP.getFlashChipRealSize()));
+    logger.log(LL_DEBUG, "  Flash chip speed: " + String(ESP.getFlashChipSpeed()));
+    logger.log(LL_DEBUG, "  Sketch size: " + String(ESP.getSketchSize()) + " (" + String(ESP.getFreeSketchSpace()) + " free)");
+    logger.log(LL_DEBUG, "  Sketch MD5: " + ESP.getSketchMD5());
+}
 
 void setup() {
     Serial.begin(9600);
@@ -29,20 +48,41 @@ void setup() {
     if (!logger.ok()) esp_exit("failed to start logger");
     logger.log(LL_INFO, "started logfile");
 
+    print_debug();
     settings_read_all();
 
     logger.log(LL_INFO, "Starting AP, with SSID: `" + wifi_ssid + "` and password `" + wifi_pass + "`");
     WiFi.persistent(false);
     WiFi.mode(WIFI_AP);
+    IPAddress ap_ip(192, 168, 0, 1);
     WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0));
     WiFi.softAP(wifi_ssid, wifi_pass);
     logger.log(LL_INFO, "AP started, IP address: " + WiFi.softAPIP().toString() + " (should be " + ap_ip.toString() + ")"); // TODO: print ssid and password
 
     stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
     stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
+
+    ticker_flush.attach_ms(30 * 1000, []() {
+        logger.log(LL_DEBUG, "flushing logger");
+        logger.flush();
+    });
+
+    ticker_debug.attach_ms(120 * 1000, []() {
+        uint32_t free, max;
+        uint8_t frag;
+        ESP.getHeapStats(&free, &max, &frag);
+        logger.log(LL_DEBUG, "heap state, using " + String(max - free) + "/" + String(max) + " (" + String(free) + " free), fragmentation is " + String(frag) + "%");
+    });
+
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    logger.log(LL_INFO, "Ready, have fun :3");
 }
 
 void loop() {
-    logger.flush();
-    delay(5000);
+    // Low is actually turning it on, I am not sure why but yeah
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(100);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(2900);
 }
