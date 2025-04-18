@@ -1,4 +1,7 @@
 #include "logger.hpp"
+#include "utils.hpp"
+
+Logger* _logger = NULL;
 
 static const char* log_levels[] = {
     "debug",
@@ -10,8 +13,6 @@ static const char* log_levels[] = {
 
 Logger::Logger(void) {
     file = LittleFS.open("/log.txt", "a+");
-    if (file) return;
-    log(LL_CRITICAL, "Failed to open log file");
 }
 
 Logger::~Logger(void) {
@@ -49,11 +50,11 @@ void Logger::close(void) {
 void Logger::panic(const char* message) {
     log(LL_CRITICAL, message);
     close();
-    ESP.deepSleep(0);
+    esp_exit("message");
 }
 
 void Logger::panic(const String& message) {
     log(LL_CRITICAL, message);
     close();
-    ESP.deepSleep(0);
+    esp_exit("message");
 }

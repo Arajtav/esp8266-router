@@ -31,4 +31,7 @@ class Logger {
         void panic(const String&);
 };
 
+extern Logger* _logger;
+#define logger (*_logger)
+
 #endif
