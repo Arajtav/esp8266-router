@@ -3,3 +3,5 @@
 compile_commands.json
 /include/build_info.h
 /data/webUI
+/data/private
+/keys

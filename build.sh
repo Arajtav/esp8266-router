@@ -1,6 +1,14 @@
 #!/bin/bash
 
-# build info header
+# keys (idk if that works or not i am bad at https)
+mkdir -p keys
+if [ ! -f ./keys/private.key ] && [ ! -f ./keys/server.crt  ]; then
+    echo "Regenerating keys"
+    openssl genpkey -algorithm RSA -out ./keys/private.key -pkeyopt rsa_keygen_bits:2048
+    openssl req -new -x509 -key ./keys/private.key -out ./keys/server.crt -days 365 -subj "/CN=192.168.0.1" -addext "subjectAltName=IP:192.168.0.1"
+fi
+
+# generate headers
 mkdir -p include
 
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -31,6 +39,9 @@ npm run build &&
 mkdir -p ../data/webUI/ &&
 mv dist/in/* ../data/webUI/ &&
 cd .. &&
+# keys
+mkdir -p ./data/private &&
+cp ./keys/* data/private/ &&
 # actual code
 pio run &&
 pio run -t compiledb && # clang lsp

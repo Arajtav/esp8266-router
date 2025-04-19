@@ -79,9 +79,7 @@ void setup() {
     stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
     stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
 
-    logger.log(LL_INFO, "Starting web UI");
     init_web_ui();
-    logger.log(LL_INFO, "Web UI ready!");
 
     ticker_flush.attach_ms(30 * 1000, []() { logger.flush(); });
     ticker_debug.attach_ms(120 * 1000, []() {
