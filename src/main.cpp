@@ -6,7 +6,9 @@
 #include "logger.hpp"
 #include "settings.hpp"
 #include "utils.hpp"
+#include "webUI.hpp"
 
+Ticker ticker_blink;
 Ticker ticker_flush;
 Ticker ticker_debug;
 
@@ -77,17 +79,18 @@ void setup() {
     stationConnectedHandler = WiFi.onSoftAPModeStationConnected(&onStationConnected);
     stationDisconnectedHandler = WiFi.onSoftAPModeStationDisconnected(&onStationDisconnected);
 
-    ticker_flush.attach_ms(30 * 1000, []() {
-        logger.log(LL_DEBUG, "flushing logger");
-        logger.flush();
-    });
+    logger.log(LL_INFO, "Starting web UI");
+    init_web_ui();
+    logger.log(LL_INFO, "Web UI ready!");
 
+    ticker_flush.attach_ms(30 * 1000, []() { logger.flush(); });
     ticker_debug.attach_ms(120 * 1000, []() {
         uint32_t free, max;
         uint8_t frag;
         ESP.getHeapStats(&free, &max, &frag);
         logger.log(LL_DEBUG, "heap state, using " + String(max - free) + "/" + String(max) + " (" + String(free) + " free), fragmentation is " + String(frag) + "%");
     });
+    ticker_blink.attach_ms(500, []() { digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); });
 
     pinMode(LED_BUILTIN, OUTPUT);
 
@@ -95,9 +98,5 @@ void setup() {
 }
 
 void loop() {
-    // Low is actually turning it on, I am not sure why but yeah
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(100);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(2900);
+    server.handleClient();
 }

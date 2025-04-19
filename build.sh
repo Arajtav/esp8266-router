@@ -24,6 +24,14 @@ cat << EOF > ./include/build_info.h
 EOF
 
 # actual build
+# webUI html
+cd webUI &&
+npm install &&
+npm run build &&
+mkdir -p ../data/webUI/ &&
+mv dist/in/* ../data/webUI/ &&
+cd .. &&
+# actual code
 pio run &&
 pio run -t compiledb && # clang lsp
 pio run -t uploadfs &&

@@ -1,7 +1,6 @@
 #ifndef _LOGGER_HPP
 #define _LOGGER_HPP
 
-#include <Arduino.h>
 #include <LittleFS.h>
 
 // WHY

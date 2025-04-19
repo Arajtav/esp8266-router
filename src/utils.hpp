@@ -8,4 +8,6 @@ void esp_exit(const String&);
 
 String macToString(const unsigned char*);
 
+String readFile(const char*);
+
 #endif

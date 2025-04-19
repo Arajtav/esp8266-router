@@ -1,4 +1,5 @@
 .pio
 .cache
 compile_commands.json
-include/build_info.h
+/include/build_info.h
+/data/webUI
