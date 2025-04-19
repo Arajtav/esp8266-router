@@ -1,3 +1,4 @@
+#include "build_info.h"
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <LittleFS.h>
@@ -59,6 +60,8 @@ void setup() {
     _logger = new Logger();
     if (!logger.ok()) esp_exit("failed to start logger");
     logger.log(LL_INFO, "started logfile");
+
+    logger.log(LL_INFO, "Starting: " VERSION);
 
     print_debug();
     settings_read_all();

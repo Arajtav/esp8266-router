@@ -1,1 +1,4 @@
 .pio
+.cache
+compile_commands.json
+include/build_info.h
