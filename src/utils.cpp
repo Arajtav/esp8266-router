@@ -35,3 +35,12 @@ String readFile(const char* filename) {
     file.close();
     return data;
 }
+
+String randomHex() {
+    String tmp = "";
+    for (int i = 0; i < 32; ++i) {
+        uint8_t byte = random(0, 16);
+        tmp += String(byte, HEX);
+    }
+    return tmp;
+}

@@ -1,10 +1,39 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
     <head>
         <title>esp8266-router - login</title>
         <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
         <meta charset="UTF-8" />
         <style>@import "tailwindcss";</style>
+        <script>
+            async function handleLogin() {
+                if (user.value.length < 1) {
+                    alert('Username cannot be empty');
+                    return;
+                }
+
+                const data = new URLSearchParams();
+                data.append('username', user.value);
+                data.append('password', Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass.value))))
+                                             .map(byte => byte.toString(16).padStart(2, '0'))
+                                             .join(''));
+
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: data,
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    location.reload();
+                    return;
+                };
+                alert('Login failed.');
+            }
+        </script>
     </head>
     <body class="overflow-clip w-screen h-screen bg-black font-sans text-white flex items-center justify-center">
         <div id="login-box" class="border flex items-center justify-center flex-col text-xl gap-4 p-4">
@@ -13,7 +42,7 @@
                 <input id="user" placeholder="Username" class="w-full focus:outline-none placeholder:text-gray-500 focus:underline hover:underline" type="text"></input>
                 <input id="pass" placeholder="Password" class="w-full focus:outline-none placeholder:text-gray-500 focus:underline hover:underline" type="password"></input>
             </div>
-            <button class="w-full cursor-pointer hover:bg-white hover:text-black focus:outline-none focus:bg-white focus:text-black">Ok</button>
+            <button onclick="handleLogin()" class="w-full cursor-pointer hover:bg-white hover:text-black focus:outline-none focus:bg-white focus:text-black">Ok</button>
         </div>
     </body>
 </html>

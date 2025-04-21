@@ -10,4 +10,6 @@ String macToString(const unsigned char*);
 
 String readFile(const char*);
 
+String randomHex();
+
 #endif
