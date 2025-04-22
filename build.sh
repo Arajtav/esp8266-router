@@ -45,6 +45,6 @@ cp ./keys/* data/private/ &&
 # actual code
 pio run &&
 pio run -t compiledb && # clang lsp
-pio run -t uploadfs &&
+pio run -t uploadfs && # TODO: this overwrites files like log.txt
 pio run -t upload &&
 pio run -t monitor

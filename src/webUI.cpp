@@ -45,10 +45,21 @@ bool is_authenticated() {
     return cookie.substring(start, end == -1 ? cookie.length() : end) == active_session_token;
 }
 
+String login;
+
 void handle_root(void) {
-    static String login = readFile("/webUI/login.html");
     AUTH_AND_RETURN(login);
     SEND_LOG_RETURN(200, "text/plain", "WIP");
+}
+
+void handle_log(void) {
+    AUTH_AND_RETURN(login);
+    File file = LittleFS.open("/log.txt", "r");
+    if (!file) SEND_LOG_RETURN(404, "text/plain", "File not found.");
+
+    server.streamFile(file, "text/plain; charset=utf-8");
+    file.close();
+    logger.log(LL_INFO, "`/log` requested, responded with 200");
 }
 
 void init_web_ui(void) {
@@ -59,11 +70,14 @@ void init_web_ui(void) {
     String server_cert = readFile("/private/server.crt");
     if (!private_key.length()) esp_exit("failed to load server certificate");
 
+    login = readFile("/webUI/login.html");
+
     server.getServer().setRSACert(new BearSSL::X509List(server_cert.c_str()), new BearSSL::PrivateKey(private_key.c_str()));
     server.getServer().setCache(&serverCache);
 
     server.on("/", HTTP_GET, handle_root);
     server.on("/login", HTTP_POST, handle_login);
+    server.on("/log", HTTP_GET, handle_log);
     server.onNotFound([]() SEND_LOG_RETURN(404, "text/plain", "Not found."));
 
     const char* headerkeys[] = { "Cookie" };
