@@ -82,11 +82,12 @@ void setup() {
     init_web_ui();
 
     ticker_flush.attach_ms(30 * 1000, []() { logger.flush(); });
-    ticker_debug.attach_ms(120 * 1000, []() {
-        uint32_t free, max;
-        uint8_t frag;
-        ESP.getHeapStats(&free, &max, &frag);
-        logger.log(LL_DEBUG, "heap state, using " + String(max - free) + "/" + String(max) + " (" + String(free) + " free), fragmentation is " + String(frag) + "%");
+    ticker_debug.attach_ms(5 * 1000, []() {
+        static uint8_t i = 0;
+        i = (i + 1) % 24; // 120 seconds
+        if (!i) logger.log(LL_DEBUG, "Heap fragmentation: " + String(ESP.getHeapFragmentation()) + "%");
+        uint32_t free = ESP.getFreeHeap();
+        if (free <= 4096) logger.log(LL_WARNING, "Low heap: " + String(free) + " bytes");
     });
     ticker_blink.attach_ms(500, []() { digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); });
 
