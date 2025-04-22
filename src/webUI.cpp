@@ -6,19 +6,32 @@
 #include "settings.hpp"
 
 BearSSL::ESP8266WebServerSecure server(443);
-BearSSL::ServerSessions serverCache(4);
+BearSSL::ServerSessions serverCache(1);
 
-// TODO: client IP
+// when possible, stream files to not OOM
+// TODO: clean all of that up
 #define SEND_LOG_RETURN(code, contentType, content) { \
                                                         server.send(code, contentType, content); \
                                                         logger.log(LL_INFO, "`" + server.uri() + "` requested, responded with " + String(code)); \
                                                         return; \
                                                     }
 #define FAIL_ON_EMPTY(data) if (!data.length()) SEND_LOG_RETURN(500, "text/plain", "Something went wrong.");
-#define AUTH_AND_RETURN(string) if (!is_authenticated()) { \
-                                    FAIL_ON_EMPTY(string); \
-                                    SEND_LOG_RETURN(401, "text/html", string); \
+#define STREAM_LOG_RETURN(fn, type) { \
+                                    File file = LittleFS.open(fn, "r"); \
+                                    if (!file) { \
+                                        logger.log(LL_ERROR, String("Failed to open file `") + fn + "`"); \
+                                        SEND_LOG_RETURN(500, "text/plain", "Something went wrong."); \
+                                    } \
+                                    server.streamFile(file, type); \
+                                    file.close(); \
+                                    logger.log(LL_INFO, "`" + server.uri() + "` requested, responded with 200"); \
+                                    return; \
                                 }
+#define FAIL_ON_AUTH_MISS() if (!is_authenticated()) { \
+                                String login = readFile("/webUI/login.html"); \
+                                FAIL_ON_EMPTY(login); \
+                                SEND_LOG_RETURN(401, "text/html", login); \
+                            }
 
 String active_session_token = ""; // currently only one session at a time
 
@@ -45,21 +58,14 @@ bool is_authenticated() {
     return cookie.substring(start, end == -1 ? cookie.length() : end) == active_session_token;
 }
 
-String login;
-
 void handle_root(void) {
-    AUTH_AND_RETURN(login);
+    FAIL_ON_AUTH_MISS();
     SEND_LOG_RETURN(200, "text/plain", "WIP");
 }
 
 void handle_log(void) {
-    AUTH_AND_RETURN(login);
-    File file = LittleFS.open("/log.txt", "r");
-    if (!file) SEND_LOG_RETURN(404, "text/plain", "File not found.");
-
-    server.streamFile(file, "text/plain; charset=utf-8");
-    file.close();
-    logger.log(LL_INFO, "`/log` requested, responded with 200");
+    FAIL_ON_AUTH_MISS();
+    STREAM_LOG_RETURN("/log.txt", "text/plain; charset=utf-8");
 }
 
 void init_web_ui(void) {
@@ -69,8 +75,6 @@ void init_web_ui(void) {
     if (!private_key.length()) esp_exit("failed to load private key");
     String server_cert = readFile("/private/server.crt");
     if (!private_key.length()) esp_exit("failed to load server certificate");
-
-    login = readFile("/webUI/login.html");
 
     server.getServer().setRSACert(new BearSSL::X509List(server_cert.c_str()), new BearSSL::PrivateKey(private_key.c_str()));
     server.getServer().setCache(&serverCache);
