@@ -1,3 +1,4 @@
+#include "build_info.h"
 #include <BearSSLHelpers.h>
 #include <ESP8266WebServerSecure.h>
 #include "webUI.hpp"
@@ -60,7 +61,10 @@ bool is_authenticated() {
 
 void handle_root(void) {
     FAIL_ON_AUTH_MISS();
-    SEND_LOG_RETURN(200, "text/plain", "WIP");
+    String index_template = readFile("/webUI/index.html");
+    FAIL_ON_EMPTY(index_template);
+    index_template.replace("_REPLACE_VERSION_", VERSION);
+    SEND_LOG_RETURN(200, "text/html", index_template);
 }
 
 void handle_log(void) {

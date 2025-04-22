@@ -1,14 +1,9 @@
 #!/bin/bash
+set -e
 
-# keys (idk if that works or not i am bad at https)
-mkdir -p keys
-if [ ! -f ./keys/private.key ] && [ ! -f ./keys/server.crt  ]; then
-    echo "Regenerating keys"
-    openssl genpkey -algorithm RSA -out ./keys/private.key -pkeyopt rsa_keygen_bits:2048
-    openssl req -new -x509 -key ./keys/private.key -out ./keys/server.crt -days 365 -subj "/CN=192.168.0.1" -addext "subjectAltName=IP:192.168.0.1"
-fi
+mkdir -p .cache # used by lsp, but also for storing outputs of things here
 
-# generate headers
+echo -e "\033[36m--------generating headers--------\033[0m"
 mkdir -p include
 
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -31,20 +26,36 @@ cat << EOF > ./include/build_info.h
 #endif // BUILD_INFO_H
 EOF
 
-# actual build
-# webUI html
-cd webUI &&
-npm install &&
-npm run build &&
-mkdir -p ../data/webUI/ &&
-mv dist/in/* ../data/webUI/ &&
-cd .. &&
-# keys
-mkdir -p ./data/private &&
-cp ./keys/* data/private/ &&
-# actual code
-pio run &&
-pio run -t compiledb && # clang lsp
-pio run -t uploadfs && # TODO: this overwrites files like log.txt
-pio run -t upload &&
+echo -e "\033[36m--------generating webUI files--------\033[0m"
+mkdir -p data/webUI/
+
+cd webUI
+if [ ! -d node_modules ]; then
+    npm install
+fi
+node build.mjs > /dev/null
+mv dist/in/* ../data/webUI/
+cd ..
+
+echo -e "\033[36m--------copying keys--------\033[0m"
+mkdir -p keys
+if [ ! -f ./keys/private.key ] && [ ! -f ./keys/server.crt  ]; then
+    echo -e "\033[36m--------generating new private key and certificate--------\033[0m"
+    openssl genpkey -algorithm RSA -out ./keys/private.key -pkeyopt rsa_keygen_bits:2048
+    openssl req -new -x509 -key ./keys/private.key -out ./keys/server.crt -days 365 -subj "/CN=192.168.0.1" -addext "subjectAltName=IP:192.168.0.1"
+fi
+mkdir -p ./data/private
+cp ./keys/private.key ./keys/server.crt data/private/
+
+echo -e "\033[36m--------compiling--------\033[0m"
+pio run > .cache/compile_log
+
+pio run -t compiledb # clang lsp
+
+echo -e "\033[36m--------uploading fs and code--------\033[0m"
+# TODO: this overwrites existing files
+pio run -t uploadfs > .cache/uploadfs_log
+pio run -t upload > .cache/upload_log
+
+echo -e "\033[36m--------ready--------\033[0m"
 pio run -t monitor

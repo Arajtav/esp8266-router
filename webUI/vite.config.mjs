@@ -1,3 +1,5 @@
+// npx vite dev
+
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import htmlMinify from 'vite-plugin-html-minify';
